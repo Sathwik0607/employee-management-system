@@ -1,0 +1,29 @@
+name: Deploy Employee Management System
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            cd ~/employee-management-system
+            git pull origin main
+            docker stop employee-management-container || true
+            docker rm employee-management-container || true
+            docker build -t employee-management-api .
+            docker run -d --name employee-management-container -p 80:8000 --env-file .env employee-management-api
